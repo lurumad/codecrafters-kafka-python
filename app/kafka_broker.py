@@ -1,7 +1,7 @@
 import socket
 import struct
 
-from app.model import Header, KafkaResponse
+from app.model import Header, Response, RequestV2
 
 
 class KafkaBroker:
@@ -20,9 +20,13 @@ class KafkaBroker:
                 with client_socket:
                     data = client_socket.recv(1024)
                     if data:
-                        response = KafkaResponse(0, Header(7))
-                        message = struct.pack('>ii', response.message_size, response.header.correlation_id)
-                        client_socket.sendall(message)
+                        request = RequestV2.from_bytes(data)
+                        response = Response(
+                            Header(
+                                correlation_id=request.header.correlation_id
+                            )
+                        )
+                        client_socket.sendall(response.to_bytes())
             except (OSError, ConnectionAbortedError):
                 break
 

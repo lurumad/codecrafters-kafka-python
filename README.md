@@ -59,3 +59,59 @@ You can fix this by installing Python 3.8 locally and using that.
 
 If you'd like to use a different version of Python, change the `language_pack`
 value in `codecrafters.yml`.
+
+# 📌 Python `struct.pack` Format Cheat Sheet
+
+## **Endianness and Alignment**
+| Symbol | Meaning |
+|--------|---------|
+| `@` | Native endianness and alignment (default) |
+| `<` | Little-endian (least significant byte first) |
+| `>` | Big-endian (network byte order) |
+| `!` | Big-endian (network order, standard alignment) |
+| `=` | Native endianness, standard alignment |
+
+## **Integer Types**
+| Format | C Type | Python Type | Size (bytes) |
+|--------|--------|------------|-------------|
+| `b` | `signed char` | `int` | 1 |
+| `B` | `unsigned char` | `int` | 1 |
+| `h` | `short` | `int` | 2 |
+| `H` | `unsigned short` | `int` | 2 |
+| `i` | `int` | `int` | 4 |
+| `I` | `unsigned int` | `int` | 4 |
+| `l` | `long` | `int` | 4 |
+| `L` | `unsigned long` | `int` | 4 |
+| `q` | `long long` | `int` | 8 |
+| `Q` | `unsigned long long` | `int` | 8 |
+
+## **Floating-Point Types**
+| Format | C Type | Python Type | Size (bytes) |
+|--------|--------|------------|-------------|
+| `f` | `float` | `float` | 4 |
+| `d` | `double` | `float` | 8 |
+
+## **Other Types**
+| Format | Meaning | Size |
+|--------|---------|------|
+| `c` | Single character (bytes) | 1 |
+| `s` | String (bytes) | Variable |
+| `p` | Pascal-style string | Variable |
+| `x` | Pad byte (no value) | 1 |
+
+## **Examples**
+```python
+import struct
+
+# Packing values
+data = struct.pack(">hI", 42, 123456)  # Big-endian short (2 bytes) + int (4 bytes)
+print(data.hex())  # 002a 0001e240
+
+# Unpacking values
+unpacked = struct.unpack(">hI", data)
+print(unpacked)  # (42, 123456)
+
+# Packing a string
+string_data = struct.pack("5s", b"hello")  # 5-byte string
+print(string_data)  # b'hello'
+
