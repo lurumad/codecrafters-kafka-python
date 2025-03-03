@@ -1,7 +1,6 @@
 import socket
-import struct
 
-from app.model import Header, Response, RequestV2
+from app.model import ResponseHeaderV0, RequestHeaderV2, ApiVersionsResponseV4
 
 
 class KafkaBroker:
@@ -20,11 +19,18 @@ class KafkaBroker:
                 with client_socket:
                     data = client_socket.recv(1024)
                     if data:
-                        request = RequestV2.from_bytes(data)
-                        response = Response(
-                            Header(
-                                correlation_id=request.header.correlation_id
+                        request = RequestHeaderV2.from_bytes(data)
+
+                        if request.request_api_version < 0 or request.request_api_version > 4:
+                            response = ApiVersionsResponseV4(
+                                correlation_id=request.correlation_id,
+                                error_code=35
                             )
+                            client_socket.sendall(response.to_bytes())
+                            return
+
+                        response = ResponseHeaderV0(
+                            correlation_id=request.correlation_id
                         )
                         client_socket.sendall(response.to_bytes())
             except (OSError, ConnectionAbortedError):
