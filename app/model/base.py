@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 NULLABLE_STRING = -1
-TAG_BUFFER = int(0).to_bytes(1, byteorder="big")
+TAG_BUFFER = 0
 
 
 class KafkaApiKeys(Enum):
@@ -108,8 +108,14 @@ class Message(Serializer):
     header: Header
     body: Body
 
+    STRUCT_FORMAT_MESSAGE_SIZE = "!I"
+
     def to_bytes(self) -> bytes:
         header_bytes = self.header.to_bytes()
         body_bytes = self.body.to_bytes()
         message_size = len(header_bytes) + len(body_bytes)
-        return struct.pack("!I", message_size) + header_bytes + body_bytes
+        return (
+            struct.pack(self.STRUCT_FORMAT_MESSAGE_SIZE, message_size)
+            + header_bytes
+            + body_bytes
+        )
