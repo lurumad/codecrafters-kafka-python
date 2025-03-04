@@ -1,4 +1,5 @@
 import socket
+import threading
 
 from app.model.base import KafkaApiKeys, Message
 from app.model.headers import ResponseHeaderV0
@@ -10,6 +11,7 @@ SUPPORTED_API_KEYS = {18: [0, 1, 2, 4]}
 
 class KafkaBroker:
     def __init__(self, host="localhost", port=9092):
+        self.threads = []
         self.host = host
         self.port = port
         self.server = socket.create_server((self.host, self.port), reuse_port=True)
@@ -18,12 +20,15 @@ class KafkaBroker:
 
     def start(self) -> None:
         self.running = True
+        print(f"Kafka Broker listening on {self.host}:{self.port}...")
         while self.running:
             try:
                 client_socket, client_address = self.server.accept()
-                print(f"Accepted connection from {client_address}")
-                self.handle_client(client_socket)
-
+                client_thread = threading.Thread(
+                    target=self.handle_client, args=(client_socket,)
+                )
+                client_thread.start()
+                self.threads.append(client_thread)
             except (OSError, ConnectionAbortedError):
                 break
 
