@@ -1,6 +1,6 @@
 import socket
 
-from app.model import ResponseHeaderV0, RequestHeaderV2, Message, ApiVersionsResponseV4
+from app.model.requests import RequestV2
 
 
 class KafkaClient:
@@ -8,10 +8,8 @@ class KafkaClient:
         self.host = host
         self.port = port
 
-    def send_message(self, topic, request: RequestHeaderV2) -> any:
+    def get_api_versions(self, request: RequestV2) -> bytes:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((self.host, self.port))
             s.sendall(request.to_bytes())
-            data = s.recv(1024)
-            return ApiVersionsResponseV4.from_bytes(data)
-
+            return s.recv(1024)

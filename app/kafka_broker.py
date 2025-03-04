@@ -1,10 +1,15 @@
 import socket
 
-from app.model import ResponseHeaderV0, RequestHeaderV2, ApiVersionsResponseV4
+from app.model.base import KafkaApiKeys, Message
+from app.model.headers import ResponseHeaderV0
+from app.model.requests import RequestV2
+from app.model.responses import ApiVersionsResponseV4, ApiKeys
+
+SUPPORTED_API_KEYS = {18: [0, 1, 2, 4]}
 
 
 class KafkaBroker:
-    def __init__(self, host='localhost', port=9092):
+    def __init__(self, host="localhost", port=9092):
         self.host = host
         self.port = port
         self.server = socket.create_server(("localhost", 9092), reuse_port=True)
@@ -19,20 +24,37 @@ class KafkaBroker:
                 with client_socket:
                     data = client_socket.recv(1024)
                     if data:
-                        request = RequestHeaderV2.from_bytes(data)
+                        request = RequestV2(data)
 
-                        if request.request_api_version < 0 or request.request_api_version > 4:
-                            response = ApiVersionsResponseV4(
-                                correlation_id=request.correlation_id,
-                                error_code=35
+                        if (
+                            request.header.request_api_key
+                            == KafkaApiKeys.ApiVersions.value
+                        ):
+                            error_code = (
+                                0
+                                if request.header.request_api_version
+                                in SUPPORTED_API_KEYS[KafkaApiKeys.ApiVersions.value]
+                                else 35
+                            )
+
+                            response = Message(
+                                header=ResponseHeaderV0(request.header.correlation_id),
+                                body=ApiVersionsResponseV4(
+                                    error_code=error_code,
+                                    api_keys=[
+                                        ApiKeys(
+                                            api_key=KafkaApiKeys.ApiVersions.value,
+                                            min_version=min(SUPPORTED_API_KEYS[18]),
+                                            max_version=max(SUPPORTED_API_KEYS[18]),
+                                        )
+                                    ],
+                                    throttle_time_ms=0,
+                                ),
                             )
                             client_socket.sendall(response.to_bytes())
                             return
 
-                        response = ResponseHeaderV0(
-                            correlation_id=request.correlation_id
-                        )
-                        client_socket.sendall(response.to_bytes())
+                        raise NotImplementedError
             except (OSError, ConnectionAbortedError):
                 break
 
